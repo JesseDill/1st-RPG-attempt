@@ -9,7 +9,11 @@ namespace RPG.SceneManagement
     public class SavingWrapper : MonoBehaviour
     {
         const string defaultSaveFile = "save";
-        private IEnumerator Start() 
+        private void Awake()
+        {
+            StartCoroutine(LoadLastScene());
+        }
+        private IEnumerator LoadLastScene() 
         {
             //IEnumerator allows start to call IEnumerator method without startcouroutine
             yield return GetComponent<SavingSystem>().LoadLastScene(defaultSaveFile);

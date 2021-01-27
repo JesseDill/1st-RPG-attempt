@@ -2,54 +2,81 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using RPG.Core;
+using RPG.Attributes;
 
-public class Projectile : MonoBehaviour
+namespace RPG.Combat
 {
-    [SerializeField] float speed = 1f;
-
-    Health target = null;
-
-    float damage = 0;
-    void Update()
+    public class Projectile : MonoBehaviour
     {
-        if (target == null) return;
-        LockOnTarget();
-        Shoot();
-    }
+        [SerializeField] float speed = 1f;
+        [SerializeField] bool isHoming = false;
+        [SerializeField] GameObject hitFX = null;
 
-    public void SetTarget(Health target, float damage)
-    {
-        this.target = target;
-        this.damage = damage;
-    }
+        Health target = null;
+        GameObject instigator = null;
 
-    private void Shoot()
-    {
-        transform.Translate(Vector3.forward * Time.deltaTime * speed);
-    }
+        float damage = 0;
+        bool firstShot = false;
 
-    private void LockOnTarget()
-    {
-        transform.LookAt(GetAimLocation());
-    }
-
-    private Vector3 GetAimLocation()
-    {
-        CapsuleCollider targetCapsule = target.GetComponent<CapsuleCollider>();
-        if (targetCapsule == null)
+        void Update()
         {
-            return target.transform.position;
+            if (target == null) return;
+            LockOnTarget();
+            Shoot();
         }
-        return target.transform.position + Vector3.up * targetCapsule.height / 2;
-    }
-    private void OnTriggerEnter(Collider other)
-    {
-        if (other.GetComponent<Health>() == target)
-        {
-            target.TakeDamage(damage);
-        }
-        Destroy(gameObject);
-    }
 
+        public void SetTarget(Health target,GameObject instigator, float damage)
+        {
+            this.target = target;
+            this.damage = damage;
+            this.instigator = instigator;
+        }
+
+        private void Shoot()
+        {
+            transform.Translate(Vector3.forward * Time.deltaTime * speed);
+        }
+
+        private void LockOnTarget()
+        {
+            if (isHoming && !target.GetIsDead())
+            {
+                transform.LookAt(GetAimLocation());
+            }
+            else if (!isHoming && !firstShot)
+            {
+                transform.LookAt(GetAimLocation());
+                firstShot = true;
+            }
+        }
+
+        private Vector3 GetAimLocation()
+        {
+            CapsuleCollider targetCapsule = target.GetComponent<CapsuleCollider>();
+            if (targetCapsule == null)
+            {
+                return target.transform.position;
+            }
+            return target.transform.position + Vector3.up * targetCapsule.height / 2;
+        }
+        private void OnTriggerEnter(Collider other)
+        {
+            Health targetHealth = other.GetComponent<Health>();
+            if (targetHealth == target)
+            {
+                if (!targetHealth.GetIsDead())
+                {
+                    target.TakeDamage(instigator, damage);
+                    GameObject contactFX = Instantiate(hitFX, GetAimLocation(), transform.rotation);
+                    Destroy(contactFX, contactFX.GetComponent<ParticleSystem>().main.startLifetime.constant);
+                    Destroy(gameObject);
+                }
+            }
+            else
+            {
+                Destroy(gameObject);
+            }
+        }
+
+    }
 }

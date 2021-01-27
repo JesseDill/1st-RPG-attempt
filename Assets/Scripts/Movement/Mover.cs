@@ -1,4 +1,5 @@
-﻿using RPG.Core;
+﻿using RPG.Attributes;
+using RPG.Core;
 using RPG.Saving;
 using System.Collections;
 using System.Collections.Generic;

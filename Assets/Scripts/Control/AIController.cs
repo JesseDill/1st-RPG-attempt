@@ -5,6 +5,7 @@ using UnityEngine;
 using RPG.Combat;
 using RPG.Movement;
 using RPG.Core;
+using RPG.Attributes;
 
 namespace RPG.Control
 {
@@ -12,6 +13,7 @@ namespace RPG.Control
     {
         [SerializeField] float chaseDistance = 5f;
         [SerializeField] float suspicionTime = 5f;
+        [SerializeField] float aggroedTime = 10f;
         [SerializeField] float timePerLocation = 5f;
         [SerializeField] PatrolPath patrolPath;
         [SerializeField] float waypointTolerance = 3f;
@@ -28,8 +30,10 @@ namespace RPG.Control
 
         float playerDistance;
         float lastTimePlayerSeen = Mathf.Infinity;
+        float lastTimeAggroed= Mathf.Infinity;
         float timeAtPosition = 0;
         int reference;
+        float currentHP;
 
         private void Start()
         {
@@ -38,6 +42,7 @@ namespace RPG.Control
             fighter = GetComponent<Fighter>();
             mover = GetComponent<Mover>();
 
+            currentHP = health.GetHealth();
             guardPosition = transform.position;
             nextPostion = guardPosition;
         }
@@ -45,12 +50,14 @@ namespace RPG.Control
         {
             playerDistance = Vector3.Distance(player.transform.position, transform.position);
             CheckDistance();
+            currentHP = health.GetHealth();
+
         }
 
         private void CheckDistance()
         {
             if (health.GetIsDead()) return;
-            if (playerDistance <= chaseDistance)
+            if (playerDistance <= chaseDistance || WasAggroed())
             {
                 lastTimePlayerSeen = 0;
                 AttackBehavior();
@@ -64,6 +71,21 @@ namespace RPG.Control
                 PatrolBehavior();
             }
             lastTimePlayerSeen += Time.deltaTime;
+            lastTimeAggroed += Time.deltaTime;
+        }
+
+        private bool WasAggroed()
+        {
+            if(currentHP != health.GetHealth())
+            {
+                lastTimeAggroed = 0;
+                return true;
+            }
+            if (lastTimeAggroed < aggroedTime)
+            {
+                return true;
+            }
+            return false;
         }
 
         private void SuspicionBehavior()
